@@ -48,14 +48,10 @@ instance Eq p => Eq (Kd2nTree p) where
   (==) Empty Empty = True
   (==) _ Empty = False
   (==) Empty _ = False
- {- (==) a1 a2 = equals a1 a2
+  (==) a1 a2 = equals a1 a2
     where 
       --igualtat de conjunts !!!
-      equals:: Kd2nTree p->Kd2nTree p -> Bool
-      equals (Node a fill (y:ys)) (Node b bfill (by:bys))
-	| a == b = equals (child a y fill) (child b by bfill) && equals (Node a fill ys) (Node b bfill bys)
-	| otherwise = False
-	-}
+      
 instance Show p => Show (Kd2nTree p) where
   show t = imprimir t
     where
