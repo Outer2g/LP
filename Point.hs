@@ -29,13 +29,13 @@ instance Point Point3d where
     child p q list = bin2dec $ childA p q list
       where 
     --Donats dos punts, retorna el numero del fill, en binari
-	childA p q [] = []
-	childA p q (x:xs)
-	    | (sel x q) <= (sel x p) = [0] ++ (childA p q xs)
-	    | otherwise = [1] ++ (childA p q xs)
+	    childA p q [] = []
+	    childA p q (x:xs)
+	        | (sel x q) <= (sel x p) = [0] ++ (childA p q xs)
+	        | otherwise = [1] ++ (childA p q xs)
     --Donat un numero binari, retorna el seu decimal
-	bin2dec:: [Int] -> Int
-	bin2dec xs = sum (map (2^) ( findIndices (==1) $ reverse xs))
+	    bin2dec:: [Int] -> Int
+	    bin2dec xs = sum (map (2^) ( findIndices (==1) $ reverse xs))
     
     dist (Point3d x1 y1 z1) (Point3d x2 y2 z2) = sqrt((x2-x1)^ 2+(y2-y1)^2+(z2-z1)^2)
 
@@ -65,6 +65,10 @@ instance Show p => Show (Kd2nTree p) where
       --altres
       imprimir a = show (impNode a)++ show (impFills a)
       impNode::Show p => Kd2nTree p -> String
-      impNode (Node a fill _) = show a ++ " " ++ show fill
+      impNode (Node a fill _) = (show a) ++ " " ++ (show fill)++("\n")
       impFills::Show p => Kd2nTree p -> String
-      impFills (Node a fill ((Node x f ys):xs)) = "<"++">"++impNode (Node x f ys) ++show (impFills (Node x f ys))++show (impFills(Node a fill xs))
+      impFills (Node _ _ []) = ""
+      impFills (Node a fill (Empty:xs)) = impFills (Node a fill xs)
+      impFills (Node a fill ((Node x f ys):xs)) = "<"++">"++(impNode (Node x f ys))++"\n"
+                                                    ++(show (impFills (Node x f ys)))++
+                                                    (show (impFills(Node a fill xs)))
