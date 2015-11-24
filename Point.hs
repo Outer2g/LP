@@ -69,6 +69,6 @@ instance Show p => Show (Kd2nTree p) where
       impFills::Show p => Kd2nTree p -> String
       impFills (Node _ _ []) = ""
       impFills (Node a fill (Empty:xs)) = impFills (Node a fill xs)
-      impFills (Node a fill ((Node x f ys):xs)) = "<"++">"++(impNode (Node x f ys))++"\n"
+      impFills (Node a fill ((Node x f ys):xs)) = "<"++(show (child a x fill))++">"++(impNode (Node x f ys))++"\n"
                                                     ++(show (impFills (Node x f ys)))++
                                                     (show (impFills(Node a fill xs)))
