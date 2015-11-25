@@ -40,7 +40,7 @@ instance Point Point3d where
     dist (Point3d x1 y1 z1) (Point3d x2 y2 z2) = sqrt((x2-x1)^ 2+(y2-y1)^2+(z2-z1)^2)
 
     list2Point [a,b,c] = Point3d a b c
---Exercici 3    
+--Exercici 3
 
 data Kd2nTree p = Node p [Int] [Kd2nTree p] | Empty
 
@@ -50,7 +50,8 @@ instance Eq p => Eq (Kd2nTree p) where
   (==) Empty _ = False
   {-(==) a1 a2 = equals a1 a2
     where 
-    --igualtat de conjunts !!!-}
+    --igualtat de conjunts !!!
+    -}
       
 instance (Show p,Point p) => Show (Kd2nTree p) where
   show t = imprimir t
@@ -68,3 +69,18 @@ instance (Show p,Point p) => Show (Kd2nTree p) where
       impFills (Node a fill ((Node x f ys):xs)) = "<"++show (child a x fill)++">"++(impNode (Node x f ys))++"\n"
                                                     ++(show (impFills (Node x f ys)))++
                                                     (show (impFills(Node a fill xs)))
+--Exercici 5
+get_all:: Point p =>Kd2nTree p -> [(p,[Int])]
+get_all Empty = []
+get_all (Node a fill []) = [(a,fill)]
+get_all (Node a fill (x:xs)) = [(a,fill)]++get_all x++continueList xs
+  where 
+    continueList::Point p =>[Kd2nTree p]->[(p,[Int])]
+    continueList (x:[]) = get_all x
+    continueList (x:xs) = get_all x++continueList xs
+--Exercici 7
+contains::Eq p => Kd2nTree p -> p-> Bool
+contains (Node a fill []) b = a==b
+contains (Node a fill (x:xs)) b 
+  | b == a = True
+  | otherwise = contains (Node a fill xs) b || contains x b
