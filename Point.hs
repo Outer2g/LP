@@ -48,23 +48,23 @@ instance Eq p => Eq (Kd2nTree p) where
   (==) Empty Empty = True
   (==) _ Empty = False
   (==) Empty _ = False
-  (==) a1 a2 = equals a1 a2
+  {-(==) a1 a2 = equals a1 a2
     where 
-      --igualtat de conjunts !!!
+    --igualtat de conjunts !!!-}
       
-instance Show p => Show (Kd2nTree p) where
+instance (Show p,Point p) => Show (Kd2nTree p) where
   show t = imprimir t
     where
-      imprimir::Show p => Kd2nTree p ->String
+      imprimir::(Show p,Point p) => Kd2nTree p ->String
       --fulla
       imprimir (Node a fill []) = impNode (Node a fill [])
       --altres
       imprimir a = show (impNode a)++ show (impFills a)
-      impNode::Show p => Kd2nTree p -> String
+      impNode::(Show p,Point p) => Kd2nTree p -> String
       impNode (Node a fill _) = (show a) ++ " " ++ (show fill)++("\n")
-      impFills::Show p => Kd2nTree p -> String
+      impFills::(Show p,Point p) => Kd2nTree p -> String
       impFills (Node _ _ []) = ""
       impFills (Node a fill (Empty:xs)) = impFills (Node a fill xs)
-      impFills (Node a fill ((Node x f ys):xs)) = "<"++(show (child a x fill))++">"++(impNode (Node x f ys))++"\n"
+      impFills (Node a fill ((Node x f ys):xs)) = "<"++show (child a x fill)++">"++(impNode (Node x f ys))++"\n"
                                                     ++(show (impFills (Node x f ys)))++
                                                     (show (impFills(Node a fill xs)))
