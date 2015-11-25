@@ -84,3 +84,12 @@ contains (Node a fill []) b = a==b
 contains (Node a fill (x:xs)) b 
   | b == a = True
   | otherwise = contains (Node a fill xs) b || contains x b
+
+--Exercici 9
+allinInterval:: Ord p =>Kd2nTree p -> p -> p -> [p]
+allinInterval (Node a fill []) b c
+    | b<=a && a<=c = [a]
+    | otherwise = []
+allinInterval (Node a fill (x:xs)) b c
+    | b<=a && a<=c = [a]++allinInterval x b c++allinInterval (Node a fill xs) b c
+    | otherwise = allinInterval x b c ++ allinInterval (Node a fill xs) b c
