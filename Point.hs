@@ -54,21 +54,17 @@ instance Eq p => Eq (Kd2nTree p) where
     -}
       
 instance (Show p,Point p) => Show (Kd2nTree p) where
-  show t = imprimir t
+  show Empty = ""
+  show (Node a fill xs) = (show a)++ " " ++ show fill ++ "\n" ++ imprimirFills xs a fill
     where
-      imprimir::(Show p,Point p) => Kd2nTree p ->String
-      --fulla
-      imprimir (Node a fill []) = impNode (Node a fill [])
-      --altres
-      imprimir a = show (impNode a)++ show (impFills a)
-      impNode::(Show p,Point p) => Kd2nTree p -> String
-      impNode (Node a fill _) = (show a) ++ " " ++ (show fill)++("\n")
-      impFills::(Show p,Point p) => Kd2nTree p -> String
-      impFills (Node _ _ []) = ""
-      impFills (Node a fill (Empty:xs)) = impFills (Node a fill xs)
-      impFills (Node a fill ((Node x f ys):xs)) = "<"++show (child a x fill)++">"++(impNode (Node x f ys))++"\n"
-                                                    ++(show (impFills (Node x f ys)))++
-                                                    (show (impFills(Node a fill xs)))
+    imprimirFills:: (Show p,Point p)=>[Kd2nTree p] ->p ->[Int] -> String
+    imprimirFills [] _ _ = ""
+    imprimirFills (Empty:xs) a fill = "x"++imprimirFills xs a fill
+    imprimirFills ((Node a fill1 ys):xs) p fill = "\n<"++show (child p a fill)++">"++
+                                                  show a ++ " " ++ show fill1++
+                                                  imprimirFills ys a fill1 ++
+                                                  imprimirFills xs p fill++"\n"
+
 --Exercici 4
 insertt::(Point p,Eq p)=> Kd2nTree p -> p -> [Int] -> Kd2nTree p
 insertt Empty p fill = (Node p fill [])
@@ -88,33 +84,16 @@ fillIt pos p fill = fillEmpty (pos-1)++[(Node p fill [])]
     where
         fillEmpty:: Int -> [Kd2nTree p]
         fillEmpty pos
+            | pos <0 =[]
             | pos ==0 = [Empty]
             | otherwise = [Empty]++fillEmpty (pos-1)
 
 insertAt:: Int -> p -> [Int] ->[Kd2nTree p] -> [Kd2nTree p]
+insertAt pos p fill (x:[]) = [(Node p fill [])]
 insertAt pos p fill (x:xs)
-    | length xs == pos = (Node p fill []):xs
-    | otherwise = insertAt pos p fill xs
+    | length xs == pos+1 = (Node p fill []):xs
+    | otherwise = [x]++insertAt pos p fill xs
 
-{-insert:: Kd2nTree p -> p -> [Int] -> Kd2nTree p
-insert Empty p fill = (Node p fill [])
-insert (Node a fill []) p xs =(Node a fill (itWillFit [] (child a p fill) p xs))
-insert (Node a fill list) p xs
-    | ((length list) >= nen) && ((list!!nen)== Empty)=(Node a fill (insertAt nen list))
-    | ((length list) >= nen) && ((list!!nen)\= Empty)=insert (list!!nen) p xs
-    | otherwise = (Node a fill (fitThat list p nen nen xs))
-    where nen = child a p fill
-fitThat:: [Kd2nTree p] -> p -> Int -> -> [Kd2nTree p]
-fitThat list p pos aux fill
-    | aux==pos = (fitThat list p pos (aux-1) fill)++[(Node p fill [])]
-    | length list < aux
-
-itWillFit::[Kd2nTree p] -> Int->p ->[Int]->[Kd2nTree p]
-itWillFit [] pos p fill
-    | pos == 0 = [(Node a fill [])]
-    | otherwise = [Empty] ++ itWillFit [] (pos-1) p fill
-
--}
 --Exercici 5
 get_all:: Point p =>Kd2nTree p -> [(p,[Int])]
 get_all Empty = []
