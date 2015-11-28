@@ -72,12 +72,16 @@ insertt (Node a fill []) p xs = (Node a fill (fillIt nen p xs))
     where
         nen = child a p fill
 insertt (Node a fill llista) p xs
-    | length llista >= nen && (llista!!nen) == Empty = (Node a fill (insertAt nen p xs llista))
-    | length llista >= nen && llista!!nen /= Empty = insertt (llista!!nen) p xs
+    | length llista -1 >= nen && llista!!nen == Empty = (Node a fill (insertAt nen p xs llista))
+    | length llista -1 >= nen && llista!!nen /= Empty = (Node a fill (insertOnList llista nen p xs))
     | otherwise = (Node a fill magia)
     where
         nen = child a p fill
         magia = (llista++(fillIt (length llista - nen) p xs))
+        insertOnList::(Point p,Eq p)=>[Kd2nTree p] -> Int -> p -> [Int] ->[Kd2nTree p]
+        insertOnList (x:xs) pos p fill
+            | pos == 0 = [insertt x p fill]++xs
+            | otherwise = [x]++insertOnList xs (pos-1) p fill
 
 fillIt:: Int -> p -> [Int] -> [Kd2nTree p]
 fillIt pos p fill = fillEmpty (pos-1)++[(Node p fill [])]
@@ -110,7 +114,7 @@ contains (Node a fill (x:xs)) b
   | b == a = True
   | otherwise = contains (Node a fill xs) b || contains x b
 --Exercici 8
-{-}nearest:: Kd2nTree p -> p -> p
+{-nearest:: Kd2nTree p -> p -> p
 nearest (Node a fill list) q = fst myListMax ([a,dist a q]++getMax list q)
     where
         getMax::[kd2nTree p] -> p ->[(p,Double)]
