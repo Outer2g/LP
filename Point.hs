@@ -44,14 +44,13 @@ instance Point Point3d where
 
 data Kd2nTree p = Node p [Int] [Kd2nTree p] | Empty
 
-instance Eq p => Eq (Kd2nTree p) where
+instance (Eq p,Point p) => Eq (Kd2nTree p) where
   (==) Empty Empty = True
   (==) _ Empty = False
   (==) Empty _ = False
-  {-(==) a1 a2 = equals a1 a2
-    where 
-    --igualtat de conjunts !!!
-    -}
+  (==) p q
+    | get_all p == get_all q = True
+    | otherwise = False
       
 instance (Show p,Point p) => Show (Kd2nTree p) where
   show Empty = ""
@@ -125,6 +124,19 @@ get_all (Node a fill (x:xs)) = [(a,fill)]++get_all x++continueList xs
     continueList::Point p =>[Kd2nTree p]->[(p,[Int])]
     continueList (x:[]) = get_all x
     continueList (x:xs) = get_all x++continueList xs
+--Exercici 6
+{-remove:: (Point p,Eq p)=>Kd2nTree p -> p -> Kd2nTree p
+remove Empty p = Empty
+remove (Node a fill []) p
+    | p == a = Empty
+    | otherwise = (Node a fill [])
+remove (Node a fill (x:xs)) p
+    | p == a = reBuildTree x xs
+    | otherwise = map $ remove (x:xs)
+    where
+        reBuildTree::Kd2nTree p -> [Kd2nTree p] ->Kd2nTree
+-}
+
 --Exercici 7
 contains::Eq p => Kd2nTree p -> p-> Bool
 contains (Node a fill []) b = a==b
@@ -132,18 +144,16 @@ contains (Node a fill (x:xs)) b
   | b == a = True
   | otherwise = contains (Node a fill xs) b || contains x b
 --Exercici 8
-{-nearest:: Kd2nTree p -> p -> p
-nearest (Node a fill list) q = fst myListMax ([a,dist a q]++getMax list q)
+{-}nearest:: Eq p =>Kd2nTree ->p -> p
+nearest Empty p =5000
+nearest (Node a fill []) p = a
+nearest (Node a fill xs) p
+    | dist a p < distFills xs p = a
+    | otherwise = distFills xs p
     where
-        getMax::[kd2nTree p] -> p ->[(p,Double)]
-        getMax ((Node a fill []):[]) q = [a,(dist a q)]
-        getMax ((Node a fill xs):[]) q = [a,(dist a q)] ++ getMax xs q
-        getMax (Node a fill (x:xs)) q = [a,(dist a q)] ++ getMax (x:xs) q
-        myListMax::[(p,Double)] -> (p,Double)
-        myListMax (x:[]) = x
-        myListMax (x:xs)
-            |fst x > myListMax xs = x
-            | otherwise = myListMax xs
+        distFills::[Kd2nTree p]-> p -> p
+        distFills (x:[]) = nearest x p
+        distFills (x:xs) = nearest
 -}
 --Exercici 9
 allinInterval:: Ord p =>Kd2nTree p -> p -> p -> [p]
