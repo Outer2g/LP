@@ -4,7 +4,7 @@ import Data.List
 class Point p where
     sel:: Int -> p -> Double--done
     dim::p ->Int--done
-    child::p -> p ->[Int] -> Int
+    child::p -> p ->[Int] -> Int --done
     dist::p -> p -> Double--done
     list2Point:: [Double] -> p--done
 
@@ -65,7 +65,7 @@ instance (Show p,Point p) => Show (Kd2nTree p) where
                                                   imprimirFills ys a fill1 ++
                                                   imprimirFills xs p fill++"\n"
 
---Exercici 4
+--Exercici 4a
 insertt::(Point p,Eq p)=> Kd2nTree p -> p -> [Int] -> Kd2nTree p
 insertt Empty p fill = (Node p fill [])
 insertt (Node a fill []) p xs = (Node a fill (fillIt nen p xs))
@@ -97,6 +97,24 @@ insertAt pos p fill (x:[]) = [(Node p fill [])]
 insertAt pos p fill (x:xs)
     | length xs == pos+1 = (Node p fill []):xs
     | otherwise = [x]++insertAt pos p fill xs
+
+--Exercici 4b
+build::(Point p, Eq p)=>[(p,[Int])] -> Kd2nTree p
+build llista = buildAux $ reverse llista
+    where
+        {-Per tal de insertar el Kd2nTree en ordre, faig una funcio que em tracti el revessat
+         de la llista d'entrada-}
+        buildAux::(Point p,Eq p) =>[(p,[Int])] -> Kd2nTree p
+        buildAux ((p,fill):[]) = insertt Empty p fill
+        buildAux ((p,fill):xs) = insertt (buildAux xs) p fill
+--Exercici 4c
+buildIni::(Point p,Eq p)=>[([Double],[Int])] ->Kd2nTree p
+buildIni llista = buildAux $ reverse llista
+    where
+        --mateixa situacio que amb build
+        buildAux::(Point p, Eq p)=> [([Double],[Int])] -> Kd2nTree p
+        buildAux ((p,fill):[]) = insertt Empty (list2Point p) fill
+        buildAux ((p,fill):xs) = insertt (buildAux xs) (list2Point p) fill
 
 --Exercici 5
 get_all:: Point p =>Kd2nTree p -> [(p,[Int])]
