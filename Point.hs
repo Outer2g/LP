@@ -7,9 +7,11 @@ class Point p where
     child::p -> p ->[Int] -> Int --done
     dist::p -> p -> Double--done
     list2Point:: [Double] -> p--done
+    ptrans::[Double] -> p ->p
+    pscale::Double -> p -> p
 
 --Exercici 2
-data Point3d = Point3d Double Double Double deriving(Eq)
+data Point3d = Point3d Double Double Double deriving(Eq,Ord)
 
 instance Show Point3d where
   show a = imprim a
@@ -40,6 +42,10 @@ instance Point Point3d where
     dist (Point3d x1 y1 z1) (Point3d x2 y2 z2) = sqrt((x2-x1)^ 2+(y2-y1)^2+(z2-z1)^2)
 
     list2Point [a,b,c] = Point3d a b c
+
+    ptrans [a,b,c] (Point3d x y z) = (Point3d (x+a) (b+y) (c+z))
+
+    pscale k (Point3d x y z) = (Point3d (x*k) (y*k) (z*k))
 --Exercici 3
 
 data Kd2nTree p = Node p [Int] [Kd2nTree p] | Empty
@@ -163,3 +169,14 @@ allinInterval (Node a fill []) b c
 allinInterval (Node a fill (x:xs)) b c
     | b<=a && a<=c = [a]++allinInterval x b c++allinInterval (Node a fill xs) b c
     | otherwise = allinInterval x b c ++ allinInterval (Node a fill xs) b c
+
+--Exercici 10
+kdmap::(Point p,Point q) => (p -> q) -> Kd2nTree p ->Kd2nTree q
+kdmap f Empty = Empty
+kdmap f (Node a fill xs) = (Node (f a) fill (map(kdmap f) xs))
+
+translate::Point p => [Double] -> Kd2nTree p -> Kd2nTree p
+translate list tree = kdmap (ptrans list) tree
+
+scale::Point p=> Double -> Kd2nTree p-> Kd2nTree p
+scale k tree = kdmap (pscale k) tree
