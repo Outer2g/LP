@@ -134,15 +134,11 @@ get_all (Node a fill (x:xs)) = [(a,fill)]++get_all x++continueList xs
 {-remove:: (Point p,Eq p)=>Kd2nTree p -> p -> Kd2nTree p
 remove Empty p = Empty
 remove (Node a fill []) p
-    | p == a = Empty
+    | a == p = Empty
     | otherwise = (Node a fill [])
 remove (Node a fill (x:xs)) p
-    | p == a = reBuildTree x xs
-    | otherwise = map $ remove (x:xs)
-    where
-        reBuildTree::Kd2nTree p -> [Kd2nTree p] ->Kd2nTree
+    | a == p =
 -}
-
 --Exercici 7
 contains::Eq p => Kd2nTree p -> p-> Bool
 contains (Node a fill []) b = a==b
@@ -150,17 +146,22 @@ contains (Node a fill (x:xs)) b
   | b == a = True
   | otherwise = contains (Node a fill xs) b || contains x b
 --Exercici 8
-{-}nearest:: Eq p =>Kd2nTree ->p -> p
-nearest Empty p =5000
+nearest::(Eq p,Point p) =>Kd2nTree p ->p -> p
 nearest (Node a fill []) p = a
-nearest (Node a fill xs) p
-    | dist a p < distFills xs p = a
-    | otherwise = distFills xs p
+nearest (Node a fill ((Node b f ys):xs)) p
+    | dist a p < dist (kidsMinD ((Node b f ys):xs) p) p = a
+    | otherwise = kidsMinD ((Node b f ys):xs) p
     where
-        distFills::[Kd2nTree p]-> p -> p
-        distFills (x:[]) = nearest x p
-        distFills (x:xs) = nearest
--}
+        kidsMinD::(Eq p, Point p)=>[Kd2nTree p] -> p -> p
+        kidsMinD ((Node a fill []):[]) p = a
+        kidsMinD ((Node a fill xs):[]) p
+            | dist a p < dist (kidsMinD xs p) p = a
+            | otherwise = kidsMinD xs p
+        kidsMinD (x:xs) p
+            | dist (nearest x p) p < dist (kidsMinD xs p) p = nearest x p
+            | otherwise = kidsMinD xs p
+nearest (Node a fill (Empty:xs)) p = nearest (Node a fill xs) p
+
 --Exercici 9
 allinInterval:: Ord p =>Kd2nTree p -> p -> p -> [p]
 allinInterval (Node a fill []) b c
