@@ -7,6 +7,7 @@ class Point p where
     child::p -> p ->[Int] -> Int --done
     dist::p -> p -> Double--done
     list2Point:: [Double] -> p--done
+    dist2::p -> p-> Double -- Millora eficiencia (Consultar funcio nearest)
     ptrans::[Double] -> p ->p
     pscale::Double -> p -> p
 
@@ -41,6 +42,8 @@ instance Point Point3d where
     
     dist (Point3d x1 y1 z1) (Point3d x2 y2 z2) = sqrt((x2-x1)^ 2+(y2-y1)^2+(z2-z1)^2)
 
+    dist2(Point3d x1 y1 z1) (Point3d x2 y2 z2) =(x2-x1)^ 2+(y2-y1)^2+(z2-z1)^2
+
     list2Point [a,b,c] = Point3d a b c
 
     ptrans [a,b,c] (Point3d x y z) = (Point3d (x+a) (b+y) (c+z))
@@ -60,15 +63,16 @@ instance (Eq p,Point p) => Eq (Kd2nTree p) where
       
 instance (Show p,Point p) => Show (Kd2nTree p) where
   show Empty = ""
-  show (Node a fill xs) = (show a)++ " " ++ show fill ++ "\n" ++ imprimirFills xs a fill
+  show (Node a fill xs) = (show a)++ " " ++ show fill ++ imprimirFills xs a fill 1
     where
-    imprimirFills:: (Show p,Point p)=>[Kd2nTree p] ->p ->[Int] -> String
-    imprimirFills [] _ _ = ""
-    imprimirFills (Empty:xs) a fill = "x"++imprimirFills xs a fill
-    imprimirFills ((Node a fill1 ys):xs) p fill = "\n<"++show (child p a fill)++">"++
+    imprimirFills:: (Show p,Point p)=>[Kd2nTree p] ->p ->[Int] -> Int-> String
+    imprimirFills [] _ _ _ = ""
+    imprimirFills (Empty:xs) a fill nivell = imprimirFills xs a fill nivell
+    imprimirFills ((Node a fill1 ys):xs) p fill nivell = "\n"++take (nivell*4) (cycle " ")++
+                                                    "<"++show (child p a fill)++">"++
                                                   show a ++ " " ++ show fill1++
-                                                  imprimirFills ys a fill1 ++
-                                                  imprimirFills xs p fill++"\n"
+                                                  imprimirFills ys a fill1 (nivell+1)++
+                                                  imprimirFills xs p fill nivell
 
 --Exercici 4a
 insertt::(Point p,Eq p)=> Kd2nTree p -> p -> [Int] -> Kd2nTree p
@@ -131,14 +135,17 @@ get_all (Node a fill (x:xs)) = [(a,fill)]++get_all x++continueList xs
     continueList (x:[]) = get_all x
     continueList (x:xs) = get_all x++continueList xs
 --Exercici 6
-{-remove:: (Point p,Eq p)=>Kd2nTree p -> p -> Kd2nTree p
+remove:: (Point p,Eq p)=>Kd2nTree p -> p -> Kd2nTree p
 remove Empty p = Empty
-remove (Node a fill []) p
-    | a == p = Empty
-    | otherwise = (Node a fill [])
-remove (Node a fill (x:xs)) p
-    | a == p =
--}
+remove t@(Node a fill []) p
+    | p == a = Empty
+    | otherwise = t
+remove t@(Node a fill list) p
+    | p == a = build fills
+    | otherwise = (Node a fill (map (flip remove p) list ))
+    where
+    --si agafem tots els punts de t, el primer sera el node a eliminar, per aixo fem drop 1
+    fills = drop 1 (get_all t)
 --Exercici 7
 contains::Eq p => Kd2nTree p -> p-> Bool
 contains (Node a fill []) b = a==b
@@ -146,21 +153,26 @@ contains (Node a fill (x:xs)) b
   | b == a = True
   | otherwise = contains (Node a fill xs) b || contains x b
 --Exercici 8
+
+{- mesura per tal d'incrementar l'eficiencia de la funcio nearest: en comptes de fer el
+calcul amb la funcio dist (la cual utilitza la funcio sqrt, la qual es molt lenta),
+comparare les distancies cuadrades-}
 nearest::(Eq p,Point p) =>Kd2nTree p ->p -> p
 nearest (Node a fill []) p = a
+nearest (Node a fill (Empty:xs)) p = nearest (Node a fill xs) p
 nearest (Node a fill ((Node b f ys):xs)) p
-    | dist a p < dist (kidsMinD ((Node b f ys):xs) p) p = a
+    | dist2 a p < dist2 (kidsMinD ((Node b f ys):xs) p) p = a
     | otherwise = kidsMinD ((Node b f ys):xs) p
     where
         kidsMinD::(Eq p, Point p)=>[Kd2nTree p] -> p -> p
+        kidsMinD (Empty:xs) p = kidsMinD xs p
         kidsMinD ((Node a fill []):[]) p = a
         kidsMinD ((Node a fill xs):[]) p
-            | dist a p < dist (kidsMinD xs p) p = a
+            | dist2 a p < dist2 (kidsMinD xs p) p = a
             | otherwise = kidsMinD xs p
         kidsMinD (x:xs) p
-            | dist (nearest x p) p < dist (kidsMinD xs p) p = nearest x p
+            | dist2 (nearest x p) p < dist2 (kidsMinD xs p) p = nearest x p
             | otherwise = kidsMinD xs p
-nearest (Node a fill (Empty:xs)) p = nearest (Node a fill xs) p
 
 --Exercici 9
 allinInterval:: Ord p =>Kd2nTree p -> p -> p -> [p]
