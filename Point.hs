@@ -152,6 +152,7 @@ remove t@(Node a fill list) p
 --Exercici 7
 contains::Eq p => Kd2nTree p -> p-> Bool
 contains (Node a fill []) b = a==b
+contains (Node a fill (Empty:xs)) b = contains (Node a fill xs) b
 contains (Node a fill (x:xs)) b 
   | b == a = True
   | otherwise = contains (Node a fill xs) b || contains x b
@@ -178,13 +179,17 @@ nearest (Node a fill ((Node b f ys):xs)) p
             | otherwise = kidsMinD xs p
 
 --Exercici 9
-allinInterval:: Ord p =>Kd2nTree p -> p -> p -> [p]
-allinInterval (Node a fill []) b c
-    | b<=a && a<=c = [a]
-    | otherwise = []
-allinInterval (Node a fill (x:xs)) b c
-    | b<=a && a<=c = [a]++allinInterval x b c++allinInterval (Node a fill xs) b c
-    | otherwise = allinInterval x b c ++ allinInterval (Node a fill xs) b c
+allinInterval::Ord p => Kd2nTree p -> p->p->[p]
+allinInterval tree a b = sort $ allinIntervalAux tree a b
+    where
+    allinIntervalAux:: Ord p =>Kd2nTree p -> p -> p -> [p]
+    allinIntervalAux (Node a fill (Empty:xs)) b c = allinInterval (Node a fill xs) b c
+    allinIntervalAux (Node a fill []) b c
+        | b<=a && a<=c = [a]
+        | otherwise = []
+    allinIntervalAux (Node a fill (x:xs)) b c
+        | b<=a && a<=c = [a]++allinInterval x b c++allinInterval (Node a fill xs) b c
+        | otherwise = allinInterval x b c ++ allinInterval (Node a fill xs) b c
 
 --Exercici 10
 kdmap::(Point p,Point q) => (p -> q) -> Kd2nTree p ->Kd2nTree q
