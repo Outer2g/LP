@@ -49,8 +49,8 @@ instance Point Point3d where
     ptrans [a,b,c] (Point3d x y z) = (Point3d (x+a) (b+y) (c+z))
 
     pscale k (Point3d x y z) = (Point3d (x*k) (y*k) (z*k))
---Exercici 3
 
+--Exercici 3
 data Kd2nTree p = Node p [Int] [Kd2nTree p] | Empty
 
 instance (Eq p,Point p) => Eq (Kd2nTree p) where
@@ -116,6 +116,7 @@ build llista = buildAux $ reverse llista
         buildAux::(Point p,Eq p) =>[(p,[Int])] -> Kd2nTree p
         buildAux ((p,fill):[]) = insertt Empty p fill
         buildAux ((p,fill):xs) = insertt (buildAux xs) p fill
+
 --Exercici 4c
 buildIni::(Point p,Eq p)=>[([Double],[Int])] ->Kd2nTree p
 buildIni llista = buildAux $ reverse llista
@@ -134,6 +135,7 @@ get_all (Node a fill (x:xs)) = [(a,fill)]++get_all x++continueList xs
     continueList::Point p =>[Kd2nTree p]->[(p,[Int])]
     continueList (x:[]) = get_all x
     continueList (x:xs) = get_all x++continueList xs
+
 --Exercici 6
 remove:: (Point p,Eq p)=>Kd2nTree p -> p -> Kd2nTree p
 remove Empty p = Empty
@@ -146,14 +148,15 @@ remove t@(Node a fill list) p
     where
     --si agafem tots els punts de t, el primer sera el node a eliminar, per aixo fem drop 1
     fills = drop 1 (get_all t)
+
 --Exercici 7
 contains::Eq p => Kd2nTree p -> p-> Bool
 contains (Node a fill []) b = a==b
 contains (Node a fill (x:xs)) b 
   | b == a = True
   | otherwise = contains (Node a fill xs) b || contains x b
---Exercici 8
 
+--Exercici 8
 {- mesura per tal d'incrementar l'eficiencia de la funcio nearest: en comptes de fer el
 calcul amb la funcio dist (la cual utilitza la funcio sqrt, la qual es molt lenta),
 comparare les distancies cuadrades-}
