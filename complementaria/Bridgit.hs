@@ -45,6 +45,46 @@ getPos i j t@(Taula mat)
 posValida::Int -> Int -> TaulerBrid -> Bool
 posValida i j (Taula mat) = ((length mat) > i) && (length (mat!!i) > j)
 
+{-a partir de un tauler, retorna el numero del jugador que ha guanyat, o -1 si encara
+no hi ha guanyador-}
+isFinished::TaulerBrid ->Int
+isFinished t@(Taula mat)
+	| blueWon t = 1
+	| redWon t = 2
+	| otherwise = -1
+	where
+	blueWon::TaulerBrid -> Bool
+	blueWon t = checkWinB (takeAdjacents 0 1 t 1) t
+	checkWinB::[(Int,Int)]-> TaulerBrid -> Bool
+	checkWinB [] t = False
+	checkWinB (x:xs) t
+		| isWinnerB (fst x) (snd x) t = True
+		| otherwise = checkWinB (xs++takeAdjacents (fst x) (snd x) t 1) t
+	isWinnerB:: Int->Int-> TaulerBrid -> Bool
+	isWinnerB i j t@(Taula mat)
+		| i == (length mat)-1 && getPos i j t == 1 = True
+		| otherwise = False
+	redWon::TaulerBrid ->Bool
+	redWon t = checkWinR (takeAdjacents 1 0 t 1) t
+	checkWinR::[(Int,Int)]-> TaulerBrid -> Bool
+	checkWinR [] t = False
+	checkWinR (x:xs) t
+		| isWinnerR (fst x) (snd x) t = True
+		| otherwise = checkWinR (xs++takeAdjacents (fst x) (snd x) t 2) t
+	isWinnerR:: Int->Int-> TaulerBrid -> Bool
+	isWinnerR i j t
+		| posValida i j t && j == (length (mat!!i))-1 && getPos i j t ==2 = True
+		|otherwise = False
+
+
+takeAdjacents::Int -> Int->TaulerBrid ->Int->[(Int,Int)]
+takeAdjacents i j t@(Taula mat) color
+	| posValida (i-1) j t && getPos (i-1) j t == color = [((i-1),j)] ++ takeAdjacents i j t color
+	| posValida (i+1) j t && getPos (i+1) j t == color = [((i+1),j)] ++ takeAdjacents i j t color
+	| posValida i (j-1) t && getPos i (j-1) t == color = [(i,(j-1))] ++ takeAdjacents i j t color
+	| posValida i (j+1) t && getPos i (j+1) t == color = [(i,(j+1))] ++ takeAdjacents i j t color
+	| otherwise = []
+
 
 main = do 
 	files<-getLine
