@@ -14,10 +14,10 @@ instance Show TaulerBrid where
 
 buildTauler:: Int -> Int -> TaulerBrid
 buildTauler n m = (Taula (aux n m))
-
-aux::Int->Int->[[Int]]
-aux n m = (concat $ replicate m ([take (n+m) $ cycle [0,1]] ++ [take (n+m) $ cycle [2,0]]))
-	++ [take (n+m) $ cycle [0,1]]
+	where
+	aux::Int->Int->[[Int]]
+	aux n m = (concat $ replicate m ([take (n+m) $ cycle [0,1]] ++ [take (n+m) $ cycle [2,0]]))
+		++ [take (n+m) $ cycle [0,1]]
 
 makeMove::Int -> Int -> TaulerBrid -> Int-> TaulerBrid
 makeMove i j t color
@@ -43,47 +43,57 @@ getPos i j t@(Taula mat)
  	| otherwise = -1
 
 posValida::Int -> Int -> TaulerBrid -> Bool
-posValida i j (Taula mat) = ((length mat) > i) && (length (mat!!i) > j)
+posValida i j (Taula mat) = i>=0 && ((length mat) > i) && j>=0 && (length (mat!!i) > j)
 
 {-a partir de un tauler, retorna el numero del jugador que ha guanyat, o -1 si encara
 no hi ha guanyador-}
 isFinished::TaulerBrid ->Int
 isFinished t@(Taula mat)
-	| blueWon t = 1
-	| redWon t = 2
+	| whoWon t 1 = 1
+	| whoWon t 2 = 2
 	| otherwise = -1
 	where
-	blueWon::TaulerBrid -> Bool
-	blueWon t = checkWinB (takeAdjacents 0 1 t 1) t
-	checkWinB::[(Int,Int)]-> TaulerBrid -> Bool
-	checkWinB [] t = False
-	checkWinB (x:xs) t
-		| isWinnerB (fst x) (snd x) t = True
-		| otherwise = checkWinB (xs++takeAdjacents (fst x) (snd x) t 1) t
-	isWinnerB:: Int->Int-> TaulerBrid -> Bool
-	isWinnerB i j t@(Taula mat)
-		| i == (length mat)-1 && getPos i j t == 1 = True
-		| otherwise = False
-	redWon::TaulerBrid ->Bool
-	redWon t = checkWinR (takeAdjacents 1 0 t 1) t
-	checkWinR::[(Int,Int)]-> TaulerBrid -> Bool
-	checkWinR [] t = False
-	checkWinR (x:xs) t
-		| isWinnerR (fst x) (snd x) t = True
-		| otherwise = checkWinR (xs++takeAdjacents (fst x) (snd x) t 2) t
-	isWinnerR:: Int->Int-> TaulerBrid -> Bool
-	isWinnerR i j t
-		| posValida i j t && j == (length (mat!!i))-1 && getPos i j t ==2 = True
-		|otherwise = False
+		whoWon::TaulerBrid->Int -> Bool
+		whoWon t color
+			|color ==1 = checkWin (takeAdjacents 0 (-1) t 1 []) t color
+			|otherwise = checkWin (takeAdjacents (-1) 0 t 2 []) t color
+		checkWin:: [(Int,Int)] -> TaulerBrid ->Int ->Bool
+		checkWin [] t color = False
+		checkWin (x:xs) t color
+			| color == 1 && isWinnerB (fst x) (snd x) t = True
+			| color == 2 && isWinnerR (fst x) (snd x) t = True
+			| otherwise = checkWin xs t color
+		isWinnerB:: Int->Int ->TaulerBrid ->Bool
+		isWinnerB i j t@(Taula mat)
+			| i == (length mat) - 1 = True
+			| otherwise = False
+		isWinnerR::Int->Int->TaulerBrid->Bool
+		isWinnerR i j t@(Taula mat)
+			| j == (length (mat!!0))-1 = True
+			| otherwise = False
 
-
-takeAdjacents::Int -> Int->TaulerBrid ->Int->[(Int,Int)]
-takeAdjacents i j t@(Taula mat) color
-	| posValida (i-1) j t && getPos (i-1) j t == color = [((i-1),j)] ++ takeAdjacents i j t color
-	| posValida (i+1) j t && getPos (i+1) j t == color = [((i+1),j)] ++ takeAdjacents i j t color
-	| posValida i (j-1) t && getPos i (j-1) t == color = [(i,(j-1))] ++ takeAdjacents i j t color
-	| posValida i (j+1) t && getPos i (j+1) t == color = [(i,(j+1))] ++ takeAdjacents i j t color
-	| otherwise = []
+takeAdjacents::Int -> Int->TaulerBrid ->Int-> [(Int,Int)]->[(Int,Int)]
+takeAdjacents (-1) 0 t@(Taula mat) color [] = makeTheCall t color [] (take (div ((length mat)) 2) $ iterate ((+)2) 1)
+	where
+		makeTheCall::TaulerBrid -> Int -> [(Int,Int)] -> [Int] -> [(Int,Int)]
+		makeTheCall t color visited (x:[]) = takeAdjacents x 0 t color visited
+		makeTheCall t color visited (x:xs) = takeAdjacents x 0 t color visited ++ makeTheCall t color visited xs
+takeAdjacents 0 (-1) t@(Taula mat) color [] = makeTheCall t color [] (take (div ((length (mat!!0))) 2) $ iterate ((+)2) 1)
+	where
+		makeTheCall::TaulerBrid -> Int -> [(Int,Int)] -> [Int] -> [(Int,Int)]
+		makeTheCall t color visited (x:[]) = takeAdjacents 0 x t color visited
+		makeTheCall t color visited (x:xs) = takeAdjacents 0 x t color visited ++ makeTheCall t color visited xs
+takeAdjacents i j t@(Taula mat) color visited
+	| not (elem upper visited) && getPos (i-1) j t == color = [upper]++takeAdjacents i j t color (visited++[upper])++takeAdjacents (i-1) j t color (visited++[upper])
+	| not (elem lower visited) && getPos (i+1) j t == color = [lower]++takeAdjacents i j t color (visited++[lower])++takeAdjacents (i+1) j t color (visited++[lower])
+	| not (elem left visited) && getPos i (j-1) t == color =[left]++takeAdjacents i j t color (visited++[left])++takeAdjacents i (j-1) t color (visited++[left])
+	| not (elem right visited) && getPos i (j+1) t == color = [right]++takeAdjacents i j t color (visited++[right])++takeAdjacents i (j+1) t color (visited++[right])
+	| otherwise =[]
+	where
+		upper = ((i-1),j)
+		lower =((i+1),j)
+		left = (i,(j-1))
+		right = (i,(j+1))
 
 
 main = do 
