@@ -95,9 +95,61 @@ takeAdjacents i j t@(Taula mat) color visited
 		left = (i,(j-1))
 		right = (i,(j+1))
 
+--gameloop2::TaulerBrid -> Int ->IO()
+gameLoop2 t turn
+	| isFinished t /= -1 = do
+							putStrLn ("Winner : Player "++show (isFinished t))
+							putStrLn $ show t
+	| otherwise = do
+				putStrLn ("Player "++show turn++" turn")
+				putStrLn "Board:"
+				putStrLn $ show t
+				putStrLn "select new position"
+				x<-getLine
+				y<-getLine
+				let newT = (makeMove (read x ::Int) (read y::Int) t turn)
+				if newT == t
+					then gameLoop2 t turn
+					else gameLoop2 newT (1+mod (turn) 2)
 
-main = do 
+gameLoop1 t turn col
+	| isFinished t /= -1 = do
+							putStrLn ("Winner : Player "++show (isFinished t))
+							putStrLn $ show t
+	| otherwise = do
+				putStrLn ("Player "++show turn++" turn")
+				putStrLn "Board:"
+				putStrLn $ show t
+				putStrLn "select new position"
+				x<-getLine
+				y<-getLine
+				let newT = (makeMove (read x ::Int) (read y::Int) t turn)
+				if newT == t
+					then gameLoop1 t turn col
+					else do
+						putStrLn "Bot moving"
+						let i = (mod ((read x::Int)+2) col)
+						putStrLn $ show i
+						gameLoop1 (makeMove i (read y::Int) newT 2) turn col
+
+
+mode2 = do
+	putStrLn "Enter dimensions: "
 	files<-getLine
 	columns<-getLine
 	let tauler = buildTauler (read files :: Int) (read columns ::Int)
-	print tauler
+	gameLoop2 tauler 1
+
+mode1 = do
+	putStrLn "Enter dimensions: "
+	files<-getLine
+	columns<-getLine
+	let tauler = buildTauler (read files :: Int) (read columns ::Int)
+	gameLoop1 tauler 1 ((read files::Int) + (read columns::Int))
+
+main = do
+	putStrLn "Select Mode"
+	mode<-getLine
+	if (read mode :: Int) == 2
+		then mode2
+		else mode1
