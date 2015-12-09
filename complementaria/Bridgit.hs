@@ -102,6 +102,7 @@ takeAdjacents i j t@(Taula mat) color visited
 		left = (i,(j-1))
 		right = (i,(j+1))
 
+--retorna els posibles moviments del tauler actual
 possibles::TaulerBrid ->[(Int,Int)]
 possibles t@(Taula mat) = buildList (take (length mat) $ iterate (+1) 0) (take (length (mat!!0)) $ iterate (+1) 0) t
 	where
@@ -112,7 +113,7 @@ possibles t@(Taula mat) = buildList (take (length mat) $ iterate (+1) 0) (take (
 			| getPos x y t == 0 && posValida x y t = [(x,y)]++buildList (x:xs) ys t ++ buildList xs (y:ys) t
 			| otherwise = buildList (x:xs) ys t ++ buildList xs (y:ys) t
 
---gameloop2::TaulerBrid -> Int ->IO()
+--tots els gameloops tenen com a parametre el tauler a considerar y el torn del jugador. gameloops = estrategies
 gameLoop2 t turn
 	| isFinished t /= -1 = do
 							putStrLn ("Winner : Player "++show (isFinished t))
@@ -195,23 +196,18 @@ mode3 = do
 	let tauler = buildTauler (read files :: Int) (read columns ::Int)
 	gameLoop3 tauler 1
 
+--generacio d'un nombre aleatori donat una seed (transparencies)
 genera :: RandomGen s => s -> Int -> Int -> (Int,s)
-
 genera s lo hi = (x,s1)
 	where
 		(x,s1) = randomR (lo,hi) s
-
-test = do
-		std <- newStdGen
-		let (l1,s1) = genera std 7 14
-		print l1
-		let (l2,s2) = genera std 7 14
-		print l2
 
 modeSelector mode
 	| mode ==1 = do mode1
 	| mode ==2 = do mode2
 	| otherwise = do mode3
+	--nomes hi ha una estrategia per a CPU: la random, el mode 2 no estaba considerat a l'enunciat
+	--pero em vaig equivocar, i ja que estava fet, em semblava bona idea incorporar-ho
 main = do
 	putStrLn "Select Mode"
 	putStrLn "Mode 1: Random CPU vs Random CPU"
