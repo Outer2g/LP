@@ -80,16 +80,21 @@ takeAdjacents (-1) 0 t@(Taula mat) color [] = makeTheCall t color [] (take (div 
 		makeTheCall::TaulerBrid -> Int -> [(Int,Int)] -> [Int] -> [(Int,Int)]
 		makeTheCall t color visited (x:[]) = takeAdjacents x 0 t color visited
 		makeTheCall t color visited (x:xs) = takeAdjacents x 0 t color visited ++ makeTheCall t color visited xs
-takeAdjacents 0 (-1) t@(Taula mat) color [] = makeTheCall t color [] (take (div ((length (mat!!0))) 2) $ iterate ((+)2) 1)
+takeAdjacents 0 (-1) t@(Taula mat) color [] = makeTheCall t color [] magic
 	where
+		magic = (take (div ((length (mat!!0))) 2) $ iterate ((+)2)1)
 		makeTheCall::TaulerBrid -> Int -> [(Int,Int)] -> [Int] -> [(Int,Int)]
 		makeTheCall t color visited (x:[]) = takeAdjacents 0 x t color visited
 		makeTheCall t color visited (x:xs) = takeAdjacents 0 x t color visited ++ makeTheCall t color visited xs
 takeAdjacents i j t@(Taula mat) color visited
-	| not (elem upper visited) && getPos (i-1) j t == color = [upper]++takeAdjacents i j t color (visited++[upper])++takeAdjacents (i-1) j t color (visited++[upper])
-	| not (elem lower visited) && getPos (i+1) j t == color = [lower]++takeAdjacents i j t color (visited++[lower])++takeAdjacents (i+1) j t color (visited++[lower])
-	| not (elem left visited) && getPos i (j-1) t == color =[left]++takeAdjacents i j t color (visited++[left])++takeAdjacents i (j-1) t color (visited++[left])
-	| not (elem right visited) && getPos i (j+1) t == color = [right]++takeAdjacents i j t color (visited++[right])++takeAdjacents i (j+1) t color (visited++[right])
+	| not (elem upper visited) && getPos (i-1) j t == color = [upper]++takeAdjacents i j t color (visited++
+															[upper])++takeAdjacents (i-1) j t color (visited++[upper])
+	| not (elem lower visited) && getPos (i+1) j t == color = [lower]++takeAdjacents i j t color (visited++[lower])++
+															takeAdjacents (i+1) j t color (visited++[lower])
+	| not (elem left visited) && getPos i (j-1) t == color =[left]++takeAdjacents i j t color (visited++
+															[left])++takeAdjacents i (j-1) t color (visited++[left])
+	| not (elem right visited) && getPos i (j+1) t == color = [right]++takeAdjacents i j t color (visited++[right])++
+															takeAdjacents i (j+1) t color (visited++[right])
 	| otherwise =[]
 	where
 		upper = ((i-1),j)
