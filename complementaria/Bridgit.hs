@@ -1,3 +1,6 @@
+import System.Random
+import System.Exit
+
 data TaulerBrid = Taula [[Int]] deriving(Eq)
 
 instance Show TaulerBrid where
@@ -9,7 +12,7 @@ instance Show TaulerBrid where
 		tractaFila::[Int] ->String
 		tractaFila ([]) = ""
 		tractaFila (x:xs)
-			| x == 0 = "  " ++ tractaFila xs
+			| x <= 0 = "  " ++ tractaFila xs
 			| otherwise = show x ++" "++tractaFila xs
 
 buildTauler:: Int -> Int -> TaulerBrid
@@ -43,7 +46,7 @@ getPos i j t@(Taula mat)
  	| otherwise = -1
 
 posValida::Int -> Int -> TaulerBrid -> Bool
-posValida i j (Taula mat) = i>=0 && ((length mat) > i) && j>=0 && (length (mat!!i) > j)
+posValida i j (Taula mat) = i>0 && ((length mat)-1 > i) && j>0 && (length (mat!!i)-1 > j)
 
 {-a partir de un tauler, retorna el numero del jugador que ha guanyat, o -1 si encara
 no hi ha guanyador-}
@@ -95,11 +98,24 @@ takeAdjacents i j t@(Taula mat) color visited
 		left = (i,(j-1))
 		right = (i,(j+1))
 
+possibles::TaulerBrid ->[(Int,Int)]
+possibles t@(Taula mat) = buildList (take (length mat) $ iterate (+1) 0) (take (length (mat!!0)) $ iterate (+1) 0) t
+	where
+		buildList::[Int]->[Int]->TaulerBrid->[(Int,Int)]
+		buildList _ [] t= []
+		buildList [] _ t= []
+		buildList (x:xs) (y:ys) t
+			| getPos x y t == 0 && posValida x y t = [(x,y)]++buildList (x:xs) ys t ++ buildList xs (y:ys) t
+			| otherwise = buildList (x:xs) ys t ++ buildList xs (y:ys) t
+
 --gameloop2::TaulerBrid -> Int ->IO()
 gameLoop2 t turn
 	| isFinished t /= -1 = do
 							putStrLn ("Winner : Player "++show (isFinished t))
 							putStrLn $ show t
+	| possibles t ==[] = do
+						putStrLn ("Empat")
+						putStrLn $ show t
 	| otherwise = do
 				putStrLn ("Player "++show turn++" turn")
 				putStrLn "Board:"
@@ -110,14 +126,32 @@ gameLoop2 t turn
 				let newT = (makeMove (read x ::Int) (read y::Int) t turn)
 				if newT == t
 					then gameLoop2 t turn
-					else gameLoop2 newT (1+mod (turn) 2)
+					else gameLoop2 newT (1+mod turn 2)
 
-gameLoop1 t turn col
-	| isFinished t /= -1 = do
-							putStrLn ("Winner : Player "++show (isFinished t))
-							putStrLn $ show t
+gameLoop1 t turn
+	| isFinished t /= -1 =do
+                          putStrLn ("Winner : Player "++show (isFinished t))
+                          putStrLn $ show t
+	| possibles t ==[] = do
+						putStrLn ("Empat")
+						putStrLn $ show t
 	| otherwise = do
-				putStrLn ("Player "++show turn++" turn")
+				putStrLn ("Player "++show turn++" moves")
+				std<-newStdGen
+				let	newPos = (possibles t)!!(fst (genera std 0 ((length (possibles t))-1)))
+				let newT = makeMove (fst newPos) (snd newPos) t turn
+				putStrLn ("Moved: "++show newPos)
+				putStrLn $show newT
+				gameLoop1 newT (1+mod turn 2)
+gameLoop3 t turn
+	| isFinished t /= -1 =do
+                          putStrLn ("Winner : Player "++show (isFinished t))
+                          putStrLn $ show t
+	| possibles t ==[] = do
+						putStrLn ("Empat")
+						putStrLn $ show t
+	| turn==1 = do
+				putStrLn ("Player "++show turn++" moves")
 				putStrLn "Board:"
 				putStrLn $ show t
 				putStrLn "select new position"
@@ -125,13 +159,16 @@ gameLoop1 t turn col
 				y<-getLine
 				let newT = (makeMove (read x ::Int) (read y::Int) t turn)
 				if newT == t
-					then gameLoop1 t turn col
-					else do
-						putStrLn "Bot moving"
-						let i = (mod ((read x::Int)+2) col)
-						putStrLn $ show i
-						gameLoop1 (makeMove i (read y::Int) newT 2) turn col
-
+					then gameLoop3 t turn
+					else gameLoop3 newT 2
+    | otherwise = do
+      				putStrLn ("Player "++show turn++" moves")
+      				std<-newStdGen
+      				let	newPos = (possibles t)!!(fst (genera std 0 ((length (possibles t))-1)))
+      				let newT = makeMove (fst newPos) (snd newPos) t turn
+      				putStrLn "Moved: "
+      				putStrLn $show newT
+      				gameLoop3 newT 1
 
 mode2 = do
 	putStrLn "Enter dimensions: "
@@ -145,11 +182,36 @@ mode1 = do
 	files<-getLine
 	columns<-getLine
 	let tauler = buildTauler (read files :: Int) (read columns ::Int)
-	gameLoop1 tauler 1 ((read files::Int) + (read columns::Int))
+	gameLoop1 tauler 1
 
+mode3 = do
+	putStrLn "Enter dimensions: "
+	files<-getLine
+	columns<-getLine
+	let tauler = buildTauler (read files :: Int) (read columns ::Int)
+	gameLoop3 tauler 1
+
+genera :: RandomGen s => s -> Int -> Int -> (Int,s)
+
+genera s lo hi = (x,s1)
+	where
+		(x,s1) = randomR (lo,hi) s
+
+test = do
+		std <- newStdGen
+		let (l1,s1) = genera std 7 14
+		print l1
+		let (l2,s2) = genera std 7 14
+		print l2
+
+modeSelector mode
+	| mode ==1 = do mode1
+	| mode ==2 = do mode2
+	| otherwise = do mode3
 main = do
 	putStrLn "Select Mode"
+	putStrLn "Mode 1: Random CPU vs Random CPU"
+	putStrLn "Mode 2: Player vs Player"
+	putStrLn "Mode 3: Player vs Random CPU"
 	mode<-getLine
-	if (read mode :: Int) == 2
-		then mode2
-		else mode1
+	modeSelector (read mode::Int)
