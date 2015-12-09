@@ -1,5 +1,4 @@
 import System.Random
-import System.Exit
 
 data TaulerBrid = Taula [[Int]] deriving(Eq)
 
