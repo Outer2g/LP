@@ -29,7 +29,6 @@ def remove(L1,L2):
       return remove(L1,L2[1:])
     
 def flatten(L):
-  if L == [] : return []
-  else: 
-    if type(L[0]) is type.IntType : return L
-  
+  if L!=[] and isinstance(L[0],list) : return flatten(L[0]) + flatten(L[1:])
+  elif L ==[] : return [4]
+  else : return L
