@@ -4,9 +4,13 @@
 import urllib
 import xml.etree.ElementTree as ET
 import sys
+import csv
+
 from math import sin, cos, sqrt, atan2, radians
 
-
+HORARI = 3
+LATITUD = 4
+LONGITUD = 5
 def distance(lat1,lon1,lat2,lon2):
     #radi aproximat de la terra:
     R = 6373.0
@@ -50,8 +54,45 @@ class Bicing:
             lon = float(station.find('long').text)
             dist = distance(position[0],position[1],lat,lon)
             freeSlots = int(station.find('slots').text)
-            if dist < 0.500 and freeSlots>0: list.append(station)
+            if dist < 0.5 and freeSlots>0: list.append(station)
         return list[:5]
+
+class Busos:
+    def __init__(self,csvSource):
+        reader = csv.reader(csvSource, delimiter='\t')
+        self.rows =[]
+        for elem in reader:
+            row = elem[0].split(';')
+            if row[0] != 'CODI_CAPA':
+                self.rows.append(row)
+
+
+    #donada una posicio, retorna una llista de les n estacions mes properes
+    def getStations(self,position,n):
+        list = []
+        for row in self.rows:
+            lat = float(row[LATITUD])
+            lon = float(row[LONGITUD])
+            dist = distance(position[0],position[1],lat,lon)
+            if dist < 0.5: list.append(row)
+        return list
+class Transports:
+    def __init__(self,csvSource):
+        reader = csv.reader(csvSource, delimiter='\t')
+        self.rows =[]
+        for elem in reader:
+            row = elem[0].split(';')
+            if row[0] != 'CODI_CAPA':
+                self.rows.append(row)
+    #donada una posicio, retorna una llista de les n estacions mes properes
+    def getStations(self,position,n):
+        list = []
+        for row in self.rows:
+            lat = float(row[LATITUD])
+            lon = float(row[LONGITUD])
+            dist = distance(position[0],position[1],lat,lon)
+            if dist < 0.5: list.append(row)
+        return list
 
 
 #agafa el nom sense les cometes simples
@@ -132,16 +173,47 @@ print 'output on file : dataQuery.dat'
 outputDades(actes)
 print 'done'
 
-#parseig medi transport
-transports = sys.argv[2]
-
 sock = urllib.urlopen("http://wservice.viabicing.cat/getstations.php?v=1")
 xmlSource = sock.read()
 sock.close()
 bicing = Bicing(xmlSource)
 
-for elem in actes:
-    for coord in elem.iter('googleMaps'):
-        lon = float(coord.get('lon'))
-        lat = float(coord.get('lat'))
-        print len(bicing.getStations([lat,lon],5))
+def getEstacionsProperesBici(actes):
+    for elem in actes:
+        for coord in elem.iter('googleMaps'):
+            lon = float(coord.get('lon'))
+            lat = float(coord.get('lat'))
+            ret = bicing.getStations([lat,lon],5)
+            print 'Posibles estacions de bicing:',len(bicing.getStations([lat,lon],5))
+            return ret
+def getEstacionsProperesTransport(actes):
+    l = []
+    for elem in actes:
+        for coord in elem.iter('googleMaps'):
+            lon = float(coord.get('lon'))
+            lat = float(coord.get('lat'))
+            ret = busos.getStations([lat,lon],6)
+            print 'Posibles estacions de Bus:',len(busos.getStations([lat,lon],6))
+            l.append(ret)
+            ret = transports.getStations([lat,lon],6)
+            print 'Posibles estacions de Tren:',len(transports.getStations([lat,lon],6))
+            l.append(ret)
+
+ifile  = open('./Documents/ESTACIONS_BUS.csv', "r")
+busos = Busos(ifile)
+ifile2 = open('./Documents/TRANSPORTS.csv',"r")
+transports = Transports(ifile2)
+#parseig medi transport
+opcions = sys.argv[2]
+print len(opcions.split(','))
+
+list = []
+for i in opcions.split(','):
+    if ('bicing' in opcions):
+        list = getEstacionsProperesBici(actes)
+        if len(list) != 0:break
+    if ('transport' in opcions):
+        bm = getEstacionsProperesTransport(actes)
+        
+
+ifile.close()
