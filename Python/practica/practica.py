@@ -14,6 +14,10 @@ HORARI = 3
 LATITUD = 4
 LONGITUD = 5
 PARADA = 6
+
+ESTACIONS = './Documents/ESTACIONS_BUS.csv'
+TRANSPORT = './Documents/TRANSPORTS.csv'
+
 def distance(lat1,lon1,lat2,lon2):
     #radi aproximat de la terra:
     R = 6373.0
@@ -272,9 +276,9 @@ xmlSource = sock.read()
 sock.close()
 bicing = Bicing(xmlSource)
 
-ifile  = open('./Documents/ESTACIONS_BUS.csv', "r")
+ifile  = open(ESTACIONS, "r")
 busos = Busos(ifile)
-ifile2 = open('./Documents/TRANSPORTS.csv',"r")
+ifile2 = open(TRANSPORT,"r")
 transports = Transports(ifile2)
 file = initTable()
 
