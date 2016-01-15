@@ -5,6 +5,8 @@ import urllib
 import xml.etree.ElementTree as ET
 import sys
 import csv
+import unicodedata
+import string
 
 from math import sin, cos, sqrt, atan2, radians
 
@@ -27,6 +29,8 @@ def distance(lat1,lon1,lat2,lon2):
 
     return R*c
 
+def remove_accents(data):
+    return ''.join(x for x in unicodedata.normalize('NFKD', data) if x in string.ascii_letters).lower()
 class Esdeveniments:
     def __init__(self,xmlSource):
         self.root = ET.fromstringlist(xmlSource).find('body').find('resultat')
@@ -35,9 +39,15 @@ class Esdeveniments:
     def busca(self,nom):
         llista = []
         for acte in self.root.find('actes').findall('acte'):
-            nomActe = acte.find('nom').text
-            nomLloc = acte.find('lloc_simple').find('nom').text
+
+            nomActe = acte.find('nom').text.encode('utf8')
+            nomActe = remove_accents(nomActe.decode('utf8'))
+
+            nomLloc = acte.find('lloc_simple').find('nom').text.encode('utf8')
+            nomLloc = remove_accents(nomLloc.decode('utf8'))
             nomBarri = acte.find('lloc_simple').find('adreca_simple').find('barri').text
+            if nomBarri != None:
+                nomBarri = remove_accents(nomBarri.encode('utf8').decode('utf8'))
 
             try:
                 if (nom in nomActe or nom in nomLloc or nom in nomBarri):
@@ -109,33 +119,8 @@ class Transports:
             if dist < 0.5: list.append([dist,row])
         return sorted(list,key=getDist)
 
-
-#agafa el nom sense les cometes simples
-def getNom(string):
-        aux = string[1:]
-        aux = aux[:-1]
-        return aux
-
-#parseja l'entrada y retorna una llista de llistes pos 0 conjuncions pos 1 disyuncions
-def parseja(entrada):
-    disyunciones = []
-    conjunciones = []
-    conjuncions = entrada.split('[')
-    for disyuncion in conjuncions:
-        try:
-            if disyuncion[-1] == ',':
-                disyuncion = disyuncion[:-1]
-            if disyuncion[-1] == ']':
-                disyuncion = disyuncion[:-1]
-                conjunciones.append(disyuncion)
-            else:
-                disyunciones.append(disyuncion)
-        except IndexError:
-            aux = 0
-
-    return [disyunciones,conjunciones]
-
 def getActes(elem):
+    elem = remove_accents(elem.decode('utf8'))
     actes = esdeveniments.busca(elem)
     print 'searching for',elem,'got',len(actes),'results'
     return actes
@@ -208,8 +193,11 @@ def addToTableBici(acte,medi,file):
 
 def getEstacionsProperesBici(acte):
     for coord in acte.iter('googleMaps'):
-        lon = float(coord.get('lon'))
-        lat = float(coord.get('lat'))
+        lon = -8000
+        lat = -8000
+        if coord.get('lon') != " ":
+            lon = float(coord.get('lon'))
+            lat = float(coord.get('lat'))
         ret = bicing.getStations([lat,lon],5)
         print 'Posibles estacions de bicing:',len(ret[0])+len(ret[1])
         return ret
@@ -217,19 +205,22 @@ def getEstacionsProperesBici(acte):
 def getEstacionsProperesTransport(acte):
     l = []
     for coord in acte.iter('googleMaps'):
-        lon = float(coord.get('lon'))
-        lat = float(coord.get('lat'))
+        lon = -8000
+        lat = -8000
+        if coord.get('lon') != " ":
+            lon = float(coord.get('lon'))
+            lat = float(coord.get('lat'))
         ret = busos.getStations([lat,lon],6)
-        print 'Posibles estacions de Bus:',len(busos.getStations([lat,lon],6))
-        l.append(ret)
+        print 'Posibles estacions de Bus:',len(ret)
+        if len(ret) != 0: l.append(ret)
         ret = transports.getStations([lat,lon],6)
-        print 'Posibles estacions de Tren:',len(transports.getStations([lat,lon],6))
-        l.append(ret)
+        print 'Posibles estacions de Tren:',len(ret)
+        if len(ret) != 0: l.append(ret)
     return l
 
 def donaTransport(actes,opcions):
     for acte in actes:
-        print 'buscant transport mes adecuat per l\'acte'
+        print 'buscant transport mes adecuat per l\'acte',acte.find('nom').text
         for i in opcions:
             if i == 'bicing':
                 listA = getEstacionsProperesBici(acte)
@@ -237,28 +228,29 @@ def donaTransport(actes,opcions):
                 break
             if ('transport' in i):
                 bm = getEstacionsProperesTransport(acte)
-                day = False
-                night = False
-                list = []
-                for elem in bm[0]:
-                    if 'Day' in elem[1][HORARI] and not day:
-                        list.append(elem[1])
-                        day = True
-                    if 'Night' in elem[1][HORARI] and not night:
-                        list.append(elem[1])
-                        night = True
-                    if day and night : break
+                if bm != []:
+                    day = False
+                    night = False
+                    list = []
+                    for elem in bm[0]:
+                        if 'Day' in elem[1][HORARI] and not day:
+                            list.append(elem[1])
+                            day = True
+                        if 'Night' in elem[1][HORARI] and not night:
+                            list.append(elem[1])
+                            night = True
+                        if day and night : break
 
-                for elem in bm[1]:
-                    if not any(elem[1][0] in s for s in list):
-                        list.append(elem[1])
+                    for elem in bm[1]:
+                        if not any(elem[1][0] in s for s in list):
+                            list.append(elem[1])
 
-                for elem in bm[0]:
-                    if not any(elem[1][0] in s for s in list):
-                        list.append(elem[1])
+                    for elem in bm[0]:
+                        if not any(elem[1][0] in s for s in list):
+                            list.append(elem[1])
 
-                addToTableTrans(acte,list,file)
-                break
+                    addToTableTrans(acte,list,file)
+                    break
             else:
                 break
 
@@ -290,5 +282,6 @@ file = initTable()
 opcions = eval(sys.argv[2])
 donaTransport(actes,opcions)
 ifile.close()
+
 
 print 'all done, output: dataQuery.dat'
