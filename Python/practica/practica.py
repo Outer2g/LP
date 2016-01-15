@@ -228,9 +228,10 @@ def donaTransport(actes,opcions):
         for i in opcions:
             if i == 'bicing':
                 listA = getEstacionsProperesBici(acte)
-                addToTableBici(acte,listA,file)
-                break
-            if ('transport' in i):
+                if listA !=[[],[]]:
+                    addToTableBici(acte,listA,file)
+                    break
+            if i == 'transport':
                 bm = getEstacionsProperesTransport(acte)
                 if bm != []:
                     day = False
