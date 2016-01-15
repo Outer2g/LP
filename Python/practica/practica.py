@@ -38,8 +38,13 @@ class Esdeveniments:
             nomActe = acte.find('nom').text
             nomLloc = acte.find('lloc_simple').find('nom').text
             nomBarri = acte.find('lloc_simple').find('adreca_simple').find('barri').text
-            if (nom in nomActe or nom in nomLloc or nom in nomBarri):
-                llista.append(acte)
+
+            try:
+                if (nom in nomActe or nom in nomLloc or nom in nomBarri):
+                    llista.append(acte)
+            except TypeError:
+                if (nom in nomActe or nom in nomLloc):
+                    llista.append(acte)
         return llista
 
     #funcio d'ordenacio de les estacions
@@ -53,14 +58,19 @@ class Bicing:
     #donada una posicio, retorna una llista de les n estacions mes properes
     def getStations(self,position,n):
         list = []
+        list2 = []
         for station in self.root.findall('station'):
             #agafem la latitud i longitud
             lat = float(station.find('lat').text)
             lon = float(station.find('long').text)
             dist = distance(position[0],position[1],lat,lon)
             freeSlots = int(station.find('slots').text)
+            bicis = int(station.find('bikes').text)
             if dist < 0.5 and freeSlots>0: list.append([dist,station])
-        return sorted(list,key=getDist)[:n]
+            if dist <0.5 and bicis>0 : list2.append([dist,station])
+        list.sort(key=getDist)
+        list2.sort(key=getDist)
+        return [list[:n],list2[:n]]
 
 class Busos:
     def __init__(self,csvSource):
@@ -125,29 +135,30 @@ def parseja(entrada):
 
     return [disyunciones,conjunciones]
 
-def getActes(list):
-    resultD = {}
-    resultC = {}
-    if list[0] != []:
-        print 'resolving disjunctions'
-        disyuncionescsv = list[0][0]
-        disyunciones = disyuncionescsv.split(',')
-        for element in disyunciones:
-            nom = getNom(element)
-            actes = esdeveniments.busca(nom)
-            print 'searching for',nom,'got',len(actes),'results'
-            resultD = set(resultD) | set(actes)
+def getActes(elem):
+    actes = esdeveniments.busca(elem)
+    print 'searching for',elem,'got',len(actes),'results'
+    return actes
 
-    if list[1] != []:
-        print 'resolving conjunctions'
-        conjuncionescsv=list[1][0]
-        conjunciones = conjuncionescsv.split(',')
-        for element in conjunciones:
-            nom = getNom(element)
-            actes = esdeveniments.busca(nom)
-            print 'searching for',nom,'got',len(actes),'results'
-            resultC = set(resultC) & set(actes)
-    return set(resultD) | set(resultD)
+def cerca(lista):
+    if isinstance(lista,str): return getActes(lista)
+    if isinstance(lista,tuple):
+        ret = []
+        for elem in lista:
+            result = cerca(elem)
+            ret = set(ret) | set(result)
+        return ret
+    if isinstance(lista,list):
+        primer = True
+        ret = []
+        for elem in lista:
+            if primer :
+                ret = cerca(elem)
+                primer = False
+            else :
+                result = cerca(elem)
+                ret = set(ret) & set(result)
+        return ret
 
 #output en taula html
 def initTable():
@@ -186,36 +197,21 @@ def addToTableBici(acte,medi,file):
     file.write('<td>'+nomActe.encode('utf8')+'</td>')
     file.write('<td>'+adrecaActe.encode('utf8')+'</td>')
     file.write('<td>'+dataActe.encode('utf8')+'</td>')
-    trans ='bicing: '
-    for elem in medi:
+    trans ='Estacions amb llocs lliures: '
+    for elem in medi[0]:
         trans = trans + elem[1].find('id').text+','
-    file.write('<td>'+trans[:-1]+'</td>')
+    trans2 = 'Estacions amb bicis lliures: '
+    for elem in medi[1]:
+        trans2 = trans2 + elem[1].find('id').text+','
+    file.write('<td>'+trans[:-1]+'<br>'+trans2[:-1]+'</td>')
     file.write('</tr>')
-
-sock = urllib.urlopen("http://w10.bcn.es/APPS/asiasiacache/peticioXmlAsia?id=199")
-xmlSource = sock.read()
-sock.close()
-esdeveniments = Esdeveniments(xmlSource)
-
-#agafem l'entrada y la dividim en conjuncions
-list = parseja(sys.argv[1])
-
-#busqueda de cada element
-actes = getActes(list)
-
-print 'total length of the query:',len(actes)
-
-sock = urllib.urlopen("http://wservice.viabicing.cat/getstations.php?v=1")
-xmlSource = sock.read()
-sock.close()
-bicing = Bicing(xmlSource)
 
 def getEstacionsProperesBici(acte):
     for coord in acte.iter('googleMaps'):
         lon = float(coord.get('lon'))
         lat = float(coord.get('lat'))
         ret = bicing.getStations([lat,lon],5)
-        print 'Posibles estacions de bicing:',len(bicing.getStations([lat,lon],5))
+        print 'Posibles estacions de bicing:',len(ret[0])+len(ret[1])
         return ret
 
 def getEstacionsProperesTransport(acte):
@@ -231,50 +227,68 @@ def getEstacionsProperesTransport(acte):
         l.append(ret)
     return l
 
+def donaTransport(actes,opcions):
+    for acte in actes:
+        print 'buscant transport mes adecuat per l\'acte'
+        for i in opcions:
+            if i == 'bicing':
+                listA = getEstacionsProperesBici(acte)
+                addToTableBici(acte,listA,file)
+                break
+            if ('transport' in i):
+                bm = getEstacionsProperesTransport(acte)
+                day = False
+                night = False
+                list = []
+                for elem in bm[0]:
+                    if 'Day' in elem[1][HORARI] and not day:
+                        list.append(elem[1])
+                        day = True
+                    if 'Night' in elem[1][HORARI] and not night:
+                        list.append(elem[1])
+                        night = True
+                    if day and night : break
+
+                for elem in bm[1]:
+                    if not any(elem[1][0] in s for s in list):
+                        list.append(elem[1])
+
+                for elem in bm[0]:
+                    if not any(elem[1][0] in s for s in list):
+                        list.append(elem[1])
+
+                addToTableTrans(acte,list,file)
+                break
+            else:
+                break
+
+
+sock = urllib.urlopen("http://w10.bcn.es/APPS/asiasiacache/peticioXmlAsia?id=199")
+xmlSource = sock.read()
+sock.close()
+esdeveniments = Esdeveniments(xmlSource)
+
+#agafem l'entrada y la dividim en conjuncions
+lista = eval(sys.argv[1])
+
+actes = cerca(lista)
+print 'got',len(actes),'results'
+
+
+sock = urllib.urlopen("http://wservice.viabicing.cat/getstations.php?v=1")
+xmlSource = sock.read()
+sock.close()
+bicing = Bicing(xmlSource)
+
 ifile  = open('./Documents/ESTACIONS_BUS.csv', "r")
 busos = Busos(ifile)
 ifile2 = open('./Documents/TRANSPORTS.csv',"r")
 transports = Transports(ifile2)
 file = initTable()
+
 #parseig medi transport
-opcions = sys.argv[2]
-for acte in actes:
-    list = []
-    for i in opcions.split(','):
-        if ('bicing' in i):
-            listA = getEstacionsProperesBici(acte)
-            if len(listA) != 0:
-                list.append(listA)
-                break
-        if ('transport' in i):
-            bm = getEstacionsProperesTransport(acte)
-            #insertem una parada d'autobus diurn i un nocturn si n'hi han
-            print len(bm)
-
-            day = False
-            night = False
-            for elem in bm[0]:
-                if 'Day' in elem[1][HORARI] and not day:
-                    list.append(elem[1])
-                    day = True
-                if 'Night' in elem[1][HORARI] and not night:
-                    list.append(elem[1])
-                    night = True
-                if day and night : break
-            for elem in bm[1]:
-                if not any(elem[1][0] in s for s in list):
-                    list.append(elem[1])
-
-            for elem in bm[0]:
-                if not any(elem[1][0] in s for s in list):
-                    list.append(elem[1])
-            break
-
-    if len(list) == 1:
-        addToTableBici(acte,list[0],file)
-    else: addToTableTrans(acte,list,file)
-
-
-        
-
+opcions = eval(sys.argv[2])
+donaTransport(actes,opcions)
 ifile.close()
+
+print 'all done, output: dataQuery.dat'
